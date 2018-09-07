@@ -32,6 +32,9 @@ function fuf#coveragefile#renewCache()
   let s:cache = {}
 endfunction
 
+function fuf#coveragefile#renewCacheForce()
+  call s:enumItems()
+endfunction
 "
 function fuf#coveragefile#requiresOnCommandPre()
   return 0
