@@ -131,6 +131,12 @@ function fuf#echoError(msg)
   call l9#echoHl('ErrorMsg', a:msg, '[fuf] ', 1)
 endfunction
 
+let s:plugindir = expand('<sfile>:p:h:h')
+
+function fuf#rootPath()
+  return s:plugindir
+endfunction
+
 "
 function fuf#openBuffer(bufNr, mode, reuse)
   if a:reuse && ((a:mode ==# s:OPEN_TYPE_SPLIT &&
