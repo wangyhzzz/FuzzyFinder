@@ -2,15 +2,15 @@
 " Copyright (c) 2007-2010 Takeshi NISHIDA
 "
 "=============================================================================
-" LOAD GUARD {{{1
+" LOAD GUARD 
 
 if !l9#guardScriptLoading(expand('<sfile>:p'), 0, 0, [])
   finish
 endif
 
-" }}}1
+" 
 "=============================================================================
-" GLOBAL FUNCTIONS {{{1
+" GLOBAL FUNCTIONS 
 
 "
 function fuf#coveragefile#createHandler(base)
@@ -33,7 +33,7 @@ function fuf#coveragefile#renewCache()
 endfunction
 
 function fuf#coveragefile#renewCacheForce()
-  call s:enumItems()
+  call s:enumItems(1)
 endfunction
 "
 function fuf#coveragefile#requiresOnCommandPre()
@@ -48,26 +48,31 @@ function fuf#coveragefile#onInit()
   command! -bang -narg=?        FufCoverageFileChange call s:changeCoverage(<q-args>)
 endfunction
 
-" }}}1
+" 
 "=============================================================================
-" LOCAL FUNCTIONS/VARIABLES {{{1
+" LOCAL FUNCTIONS/VARIABLES 
 
 let s:MODE_NAME = expand('<sfile>:t:r')
 
 "
-function s:enumItems()
+function s:enumItems(...)
   let key = join([getcwd(), g:fuf_ignoreCase, g:fuf_coveragefile_exclude,
         \         g:fuf_coveragefile_globPatterns], "\n")
-  if !exists('s:cache[key]')
-    let s:cache[key] = l9#concat(map(copy(g:fuf_coveragefile_globPatterns),
-          \                          'fuf#glob(v:val)'))
-    call filter(s:cache[key], 'filereadable(v:val)') " filter out directories
-    call map(s:cache[key], 'fuf#makePathItem(fnamemodify(v:val, ":~:."), "", 0)')
-    if len(g:fuf_coveragefile_exclude)
-      call filter(s:cache[key], 'v:val.word !~ g:fuf_coveragefile_exclude')
+  if !exists('s:cache[key]') || a:{1}
+      let path = l9#concatPaths([g:fuf_dataDir,'cache', substitute(getcwd(),'/\|:','.','g')])
+    let s:cache[key] = l9#readFile(path)
+    if !len(s:cache[key]) || a:{1}
+      let s:cache[key] = l9#concat(map(copy(g:fuf_coveragefile_globPatterns),'fuf#glob(v:val)'))
+      call filter(s:cache[key], 'filereadable(v:val)') 
+      if len(g:fuf_coveragefile_exclude)
+          call filter(s:cache[key], 'v:val !~ g:fuf_coveragefile_exclude')
+      endif
+      call l9#writeFile(s:cache[key], path)
     endif
+    call map(s:cache[key], 'fuf#makePathItem(fnamemodify(v:val, ":~:."), "", 0)')
     call fuf#mapToSetSerialIndex(s:cache[key], 1)
     call fuf#mapToSetAbbrWithSnippedWordAsPath(s:cache[key])
+    let s:items = s:cache[key]
   endif
   return s:cache[key]
 endfunction
@@ -131,9 +136,9 @@ function s:changeCoverage(name)
   FufCoverageFile
 endfunction
 
-" }}}1
+" 
 "=============================================================================
-" s:handler {{{1
+" s:handler 
 
 let s:handler = {}
 
@@ -173,7 +178,7 @@ endfunction
 
 "
 function s:handler.getCompleteItems(patternPrimary)
-  return self.items
+  return s:items
 endfunction
 
 "
@@ -189,14 +194,14 @@ endfunction
 function s:handler.onModeEnterPost()
   " NOTE: Comparing filenames is faster than bufnr('^' . fname . '$')
   let bufNamePrev = fnamemodify(bufname(self.bufNrPrev), ':~:.')
-  let self.items = copy(s:enumItems())
-  call filter(self.items, 'v:val.word !=# bufNamePrev')
+  let s:items = copy(s:enumItems())
+  call filter(s:items, 'v:val.word !=# bufNamePrev')
 endfunction
 
 "
 function s:handler.onModeLeavePost(opened)
 endfunction
 
-" }}}1
+" 
 "=============================================================================
 " vim: set fdm=marker:
