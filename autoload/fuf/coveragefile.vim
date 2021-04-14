@@ -178,6 +178,10 @@ endfunction
 
 "
 function s:handler.getCompleteItems(patternPrimary)
+    let path = l9#concatPaths([g:fuf_dataDir,'cache', substitute(getcwd(),'/\|:','.','g')])
+    if !filereadable(fnamemodify(path,":p"))
+        call s:enumItems(1)
+    endif
   return s:items
 endfunction
 
